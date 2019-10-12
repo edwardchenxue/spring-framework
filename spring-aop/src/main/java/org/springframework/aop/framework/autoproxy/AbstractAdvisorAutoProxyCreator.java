@@ -85,7 +85,9 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 * @see #extendAdvisors
 	 */
 	protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName) {
+		//返回满足子类中方法实现：isEligibleAdvisorBean的bean,例如要求满足：角色为基础设施类的Advisor
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
+		//重点：如下方法会调用pointcut的match方法判断beanClass是否满足切面要求
 		List<Advisor> eligibleAdvisors = findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);
 		extendAdvisors(eligibleAdvisors);
 		if (!eligibleAdvisors.isEmpty()) {

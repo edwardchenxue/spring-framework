@@ -62,6 +62,7 @@ public class BeanFactoryAdvisorRetrievalHelper {
 	 * @return the list of {@link org.springframework.aop.Advisor} beans
 	 * @see #isEligibleBean
 	 */
+	//在beanFactory中找出所有的类型为Advisor的bean，这会将处理事务、缓存等的Advisor Bean查找出来
 	public List<Advisor> findAdvisorBeans() {
 		// Determine list of advisor bean names, if not cached already.
 		String[] advisorNames = null;
@@ -81,6 +82,8 @@ public class BeanFactoryAdvisorRetrievalHelper {
 
 		List<Advisor> advisors = new LinkedList<Advisor>();
 		for (String name : advisorNames) {
+			//调用到实现类中的isEligibleAdvisorBean的方法，例如InfrastructureAdvisorAutoProxyCreator这个实现类，
+			// 会判断角色是否是基础设施类的bean,即bean的role为：BeanDefinition.ROLE_INFRASTRUCTURE
 			if (isEligibleBean(name)) {
 				if (this.beanFactory.isCurrentlyInCreation(name)) {
 					if (logger.isDebugEnabled()) {
@@ -89,6 +92,7 @@ public class BeanFactoryAdvisorRetrievalHelper {
 				}
 				else {
 					try {
+						//满足要求，放入到返回的列表中
 						advisors.add(this.beanFactory.getBean(name, Advisor.class));
 					}
 					catch (BeanCreationException ex) {

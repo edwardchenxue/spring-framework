@@ -226,7 +226,7 @@ public abstract class AopUtils {
 			// No need to iterate the methods if we're matching any method anyway...
 			return true;
 		}
-
+		//TODO 这里有一个疑问，IntroductionAwareMethodMatcher是什么
 		IntroductionAwareMethodMatcher introductionAwareMethodMatcher = null;
 		if (methodMatcher instanceof IntroductionAwareMethodMatcher) {
 			introductionAwareMethodMatcher = (IntroductionAwareMethodMatcher) methodMatcher;
@@ -271,9 +271,12 @@ public abstract class AopUtils {
 	 * @return whether the pointcut can apply on any method
 	 */
 	public static boolean canApply(Advisor advisor, Class<?> targetClass, boolean hasIntroductions) {
+		//如果是类增强器，则调用类增强器持有的ClassFilter进行判断是否满足满足增强要求
+		//因为类增强器与类中的方法拦截增强没有关系，所以在类增强器中只需要持有ClassFilter即可
 		if (advisor instanceof IntroductionAdvisor) {
 			return ((IntroductionAdvisor) advisor).getClassFilter().matches(targetClass);
 		}
+		//方法级别的增强器，调用Advisor中的Pointcut进行match
 		else if (advisor instanceof PointcutAdvisor) {
 			PointcutAdvisor pca = (PointcutAdvisor) advisor;
 			return canApply(pca.getPointcut(), targetClass, hasIntroductions);
@@ -298,6 +301,9 @@ public abstract class AopUtils {
 		}
 		List<Advisor> eligibleAdvisors = new LinkedList<Advisor>();
 		for (Advisor candidate : candidateAdvisors) {
+			//进行类的增强
+			//注意：IntroductionAdvisor是进行类的增强，给targetClass增加更多的接口或者方法
+			//与之对应的是PointcutAdvisor是进行方法的增强
 			if (candidate instanceof IntroductionAdvisor && canApply(candidate, clazz)) {
 				eligibleAdvisors.add(candidate);
 			}
