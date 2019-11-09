@@ -503,7 +503,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	protected Object doCreateBean(final String beanName, final RootBeanDefinition mbd, final Object[] args)
 			throws BeanCreationException {
-
+		//Edward 开始创建Bean
+		//1st:选择合适的构造器，创建Bean实例 //TODO 示例化前置调用在哪里
+		//2st:调用MergedBeanDefinitionPostProcessor,其中的postProcessMergedBeanDefinition方法会将注入信息解析出来并放入缓存中。
+		//MergedBeanDefinitionPostProcessor这个是在bean实例化之后填充属性前调用，可以对RootBeanDefinition进行修改
 		// Instantiate the bean.
 		BeanWrapper instanceWrapper = null;
 		if (mbd.isSingleton()) {
@@ -546,11 +549,15 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				}
 			});
 		}
-
+		//Edward bean创建完成，接下来对Bean进行初始化
+		//从代码上看，初始化分为两步：
+		//1st:对Bean的属性进行填充，这其中包括分析@Autowired注解,包括调用：InstantiationAwareBeanPostProcessor#postProcessAfterInstantiation
+		//2nd:调用initializeBean执行bean中的某些方法,包括调用：BeanPostProcessor#postProcessBeforeInitialization，afterPropertiesSet方法,postProcessAfterInitialization
 		// Initialize the bean instance.
 		Object exposedObject = bean;
 		try {
 			populateBean(beanName, mbd, instanceWrapper);
+			//对Bean进行初始化
 			if (exposedObject != null) {
 				exposedObject = initializeBean(beanName, exposedObject, mbd);
 			}
@@ -1226,7 +1233,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// state of the bean before properties are set. This can be used, for example,
 		// to support styles of field injection.
 		boolean continueWithPropertyPopulation = true;
-
+		//Edward 实例化后，调用InstantiationAwareBeanPostProcessor的postProcessAfterInstantiation方法
+		//在这里也可以看出postProcessAfterInstantiation的执行时机
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {
@@ -1608,6 +1616,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @see #applyBeanPostProcessorsAfterInitialization
 	 */
 	protected Object initializeBean(final String beanName, final Object bean, RootBeanDefinition mbd) {
+		//Edward Bean实例化后进行初始化，在初始化前各个依赖已经准备完成
+		//这里的实例化按照如下步骤进行：
+		//1st:检查Bean是否实现了BeanClassLoaderAware、BeanNameAware这两个接口，如果实现了则调用接口的方法
+		//2nd:调用beanPostProcessor中的postProcessBeforeInitialization方法
+		//3ird:判断是否是InitializingBean，如果是则调用afterPropertiesSet方法
+		//4th:调用beanPostProcessor中的postProcessAfterInitialization方法
 		if (System.getSecurityManager() != null) {
 			AccessController.doPrivileged(new PrivilegedAction<Object>() {
 				@Override
@@ -1627,6 +1641,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		try {
+			//Edward 判断是否是InitializingBean，如果是则调用afterPropertiesSet方法
 			invokeInitMethods(beanName, wrappedBean, mbd);
 		}
 		catch (Throwable ex) {
@@ -1648,7 +1663,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			if (bean instanceof BeanClassLoaderAware) {
 				((BeanClassLoaderAware) bean).setBeanClassLoader(getBeanClassLoader());
 			}
-			if (bean instanceof BeanFactoryAware) {
+			if (bean instanceof BeanClassLoaderAware) {
 				((BeanFactoryAware) bean).setBeanFactory(AbstractAutowireCapableBeanFactory.this);
 			}
 		}

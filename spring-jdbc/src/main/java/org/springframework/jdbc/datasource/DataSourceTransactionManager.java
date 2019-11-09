@@ -226,6 +226,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 		return txObject;
 	}
 
+	//
 	@Override
 	protected boolean isExistingTransaction(Object transaction) {
 		DataSourceTransactionObject txObject = (DataSourceTransactionObject) transaction;
@@ -235,6 +236,8 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 	/**
 	 * This implementation sets the isolation level but ignores the timeout.
 	 */
+	//Edward 根据当前transaction的情况进行相应的处理，主要包括：如果transaction没有数据库连接，则获取一个数据库连接并绑定到transaction中
+	//
 	@Override
 	protected void doBegin(Object transaction, TransactionDefinition definition) {
 		DataSourceTransactionObject txObject = (DataSourceTransactionObject) transaction;
@@ -302,6 +305,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 		TransactionSynchronizationManager.bindResource(this.dataSource, suspendedResources);
 	}
 
+	//Edward 取出数据库连接并且提交
 	@Override
 	protected void doCommit(DefaultTransactionStatus status) {
 		DataSourceTransactionObject txObject = (DataSourceTransactionObject) status.getTransaction();

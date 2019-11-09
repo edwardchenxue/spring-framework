@@ -274,6 +274,8 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 
 		if (txAttr == null || !(tm instanceof CallbackPreferringPlatformTransactionManager)) {
 			// Standard transaction demarcation with getTransaction and commit/rollback calls.
+			//Edward 根据需要判断是否生成TransactionInfo，例如：在不存在事务的情况下创建一个事务，存在事务的情况下不开启新的事务
+			//在事务传递级别为新开启事务的情况下新建事务
 			TransactionInfo txInfo = createTransactionIfNecessary(tm, txAttr, joinpointIdentification);
 			Object retVal = null;
 			try {
@@ -287,8 +289,12 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 				throw ex;
 			}
 			finally {
+				//Edward 恢复为上一个事务
 				cleanupTransactionInfo(txInfo);
 			}
+			//Edward 根据事务的状态进行处理，
+			//如果事务的状态为新事务，则会提交事务
+			//如果事务状态isNewSynchronization为true(新的同步)，则会执行同步列表中的Adaptor
 			commitTransactionAfterReturning(txInfo);
 			return retVal;
 		}
@@ -456,8 +462,10 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		}
 
 		TransactionStatus status = null;
+
 		if (txAttr != null) {
 			if (tm != null) {
+				//Edward 根据@Transactional的配置获取事务状态，事务状态直接决定了该方法执行后是提交事务还是回滚事务还是什么都不做，所以getTransaction非常重要
 				status = tm.getTransaction(txAttr);
 			}
 			else {
@@ -467,6 +475,9 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 				}
 			}
 		}
+		//Edward 根据事务状态等生成TransactionInfo对象，上层处理方法会根据该返回对象来判断是否需要进行代码提交、是否需要执行afterCommit等同步方法。
+		//例如：如果返回的TransactionInfo中事务状态TransactionStatus中isNewTransaction()为true，则会提交事务
+		//例如：如果返回的TransactionInfo中事务状态TransactionStatus中isNewSynchronization为true，则会提交相应的同步方法
 		return prepareTransactionInfo(tm, txAttr, joinpointIdentification, status);
 	}
 

@@ -69,7 +69,7 @@ public class DefaultTransactionDefinition implements TransactionDefinition, Seri
 	 * @see #setIsolationLevel
 	 * @see #setTimeout
 	 * @see #setReadOnly
-	 * @see #setName
+	 * @see #setName`
 	 */
 	public DefaultTransactionDefinition() {
 	}

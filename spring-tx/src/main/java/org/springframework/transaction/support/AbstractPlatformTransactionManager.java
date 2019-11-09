@@ -338,6 +338,8 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	 */
 	@Override
 	public final TransactionStatus getTransaction(TransactionDefinition definition) throws TransactionException {
+		//Edward 对于不同的底层实现，transaction的获取各不相同，以DataSourceTransactionManager为例，其transaction为DataSourceTransactionObject对象
+		//这个对象持有了ConnectionHolder，一旦事务开始，则transaction中的ConnectionHolder的状态会设置为激活
 		Object transaction = doGetTransaction();
 
 		// Cache debug flag to avoid repeated checks.
@@ -347,9 +349,12 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			// Use defaults if no transaction definition given.
 			definition = new DefaultTransactionDefinition();
 		}
-
+		//Edward 判断是否已经存在事务，如果存在则对已有的事务进行处理。
+		// 以DataSourceTransactionManager为例，其通过DataSourceTransactionObject中的ConnectionHolder#isTransactionActive确定是否已经存在事务
+		//如果没有存在事务
 		if (isExistingTransaction(transaction)) {
 			// Existing transaction found -> check propagation behavior to find out how to behave.
+			//Edward 在handleExistingTransaction方法中详细的对事务传播级别进行了判断并进行相应的处理
 			return handleExistingTransaction(definition, transaction, debugEnabled);
 		}
 
@@ -419,7 +424,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			return prepareTransactionStatus(
 					definition, null, false, newSynchronization, debugEnabled, suspendedResources);
 		}
-
+		//Edward 如果事务传播级别为REQUIRES_NEW，则挂起已有事务和同步的事件，新建事务(即newTransaction为true，最后会根据这个标识来决定是否提交)
 		if (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRES_NEW) {
 			if (debugEnabled) {
 				logger.debug("Suspending current transaction, creating new transaction with name [" +
@@ -740,6 +745,9 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	 * @param status object representing the transaction
 	 * @throws TransactionException in case of commit failure
 	 */
+	//Edward 对事务进行提交，在提交前、后触发一些操作，例如：triggerBeforeCommit、triggerBeforeCompletion、triggerAfterCommit(status);
+	//triggerAfterCompletion等，我们可以利用这些操作实现一些额外的功能，例如：提交后发送消息、回滚后将缓存上的库存数量还原等。
+	//在提交前会对status进行判断，只有在status.isNewTransaction为true时才会进行提交，isNewTransaction代表是一个新的事务所以需要提交，对于使用的是上一级方法的事务则不进行提交
 	private void processCommit(DefaultTransactionStatus status) throws TransactionException {
 		try {
 			boolean beforeCompletionInvoked = false;
